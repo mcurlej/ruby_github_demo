@@ -4,6 +4,9 @@ require 'net/http'
 require 'json'
 
 
+
+
+
 # GithubAPI class responsible for interacting with github REST API
 class GithubAPI
 # the default urls which will use to communicate with the api
@@ -11,8 +14,7 @@ class GithubAPI
   @@apiUrlsTemplates = {
     "issuesOpenUrl" => "https://api.github.com/search/issues?q=repo:user/repository+is:issue+is:open+&per_page=1",
     "issuesClosedUrl" => "https://api.github.com/search/issues?q=repo:user/repository+is:issue+is:closed+&per_page=1",
-
-    #"repositoryUrl" => "https://api.github.com/repos/user/repository"
+    "repositoryUrl" => "https://api.github.com/repos/user/repository"
   }
 
   def initialize(user, repository)
@@ -22,7 +24,7 @@ class GithubAPI
 
   def callUrls
     repositoryData = []
-    configuredUrls = self.configUrls()
+    configuredUrls = configUrls()
 
     configuredUrls.each do |uri|
       res = Net::HTTP.get_response(uri)
@@ -46,6 +48,10 @@ class GithubAPI
     configuredUrls.push(URI(@@apiUrlsTemplates["repositoryUrl"].sub(/(.+?\/repos\/)user\/repository/, "\\1#{@user}\/#{@repository}")))
     return configuredUrls
   end
+
+  protected :callUrls
+  private :configUrls
+
 end
 
 
@@ -53,11 +59,11 @@ class GithubRepository < GithubAPI
 
 
   def initialize(repoString)
-    repoInfo = self.parseRepoString(repoString)
+    repoInfo = parseRepoString(repoString)
     super(repoInfo["user"], repoInfo["repository"])
   end
-  def getInformation
-      repositoryData = self.callUrls()
+  def getRepoInfo
+      repositoryData = callUrls()
       formatData(repositoryData)
   end
 
@@ -75,14 +81,11 @@ class GithubRepository < GithubAPI
     closedIssues = repositoryData[1]["total_count"]
     repoName = repositoryData[2]["full_name"]
     puts repoName
-    puts "Issues (#{openIssues+closedIssues})"
-
-    #return repositoryData
+    puts "Issues (#{openIssues+closedIssues}): #{openIssues} open, #{closedIssues} closed"
   end
+
+  private :formatData, :parseRepoString
 end
 
-r = GithubRepository.new("https://github.com/openshift/origin")
-r.getInformation()
-#g = GithubAPI.new("openshift", "origin")
-#data = g.callUrls()
-#puts data
+gr = GithubRepository.new("https://github.com/openshift/origin")
+gr.getRepoInfo()
